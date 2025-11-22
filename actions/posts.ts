@@ -4,7 +4,6 @@ import { unstable_cache, revalidatePath, revalidateTag } from "next/cache";
 import { connectDB } from "@/lib/mongoose";
 import { Post, type IPost, type IPostPage } from "@/lib/models/Post";
 import { Category } from "@/lib/models/Category";
-import { renderMarkdownToHtml } from "@/lib/markdown";
 import { requireAdmin } from "@/lib/auth";
 
 export type CreatePostInput = {
@@ -28,15 +27,21 @@ function normalizeSlug(slug: string) {
 }
 
 function normalizePages(pages: IPostPage[]): IPostPage[] {
-  const sorted = [...pages].sort((a, b) => (a.pageNumber || 0) - (b.pageNumber || 0));
-  return sorted.map((p, i) => ({ pageNumber: i + 1, title: p.title || `Page ${i + 1}`, content: p.content || "" }));
+  const sorted = [...pages].sort(
+    (a, b) => (a.pageNumber || 0) - (b.pageNumber || 0)
+  );
+  return sorted.map((p, i) => ({
+    pageNumber: i + 1,
+    title: p.title || `Page ${i + 1}`,
+    content: p.content || "",
+  }));
 }
 
 export async function createPost(input: CreatePostInput) {
   try {
     await requireAdmin();
     await connectDB();
-    
+
     if (!input.pages || input.pages.length === 0) {
       throw new Error("At least one page with content is required");
     }
@@ -51,7 +56,9 @@ export async function createPost(input: CreatePostInput) {
     // Optional verify categories exist
     let categoryIds: any[] = [];
     if (input.categories && input.categories.length) {
-      const cats = await Category.find({ _id: { $in: input.categories } }).select("_id");
+      const cats = await Category.find({
+        _id: { $in: input.categories },
+      }).select("_id");
       categoryIds = cats.map((c) => c._id);
     }
 
@@ -71,7 +78,7 @@ export async function createPost(input: CreatePostInput) {
       categories: categoryIds,
       section,
     });
-    
+
     revalidatePath("/blog");
     revalidatePath(`/blog/${post.slug}`);
     // Bust caches backed by unstable_cache tags
@@ -101,7 +108,9 @@ export async function updatePost(slug: string, data: Partial<CreatePostInput>) {
     }
 
     if (data.categories) {
-      const cats = await Category.find({ _id: { $in: data.categories } }).select("_id");
+      const cats = await Category.find({
+        _id: { $in: data.categories },
+      }).select("_id");
       update.categories = cats.map((c) => c._id);
     }
 
@@ -158,7 +167,7 @@ export async function getPosts(opts: ListOptions = {}): Promise<IPost[]> {
   const run = unstable_cache(
     async () => {
       await connectDB();
-      const query: any = { };
+      const query: any = {};
       if (opts.published !== undefined) query.published = opts.published;
       else query.published = true;
 
@@ -201,7 +210,7 @@ export async function getPosts(opts: ListOptions = {}): Promise<IPost[]> {
       // Serialize posts to ensure all IPost properties are present
       return posts.map((post: any) => ({
         _id: post._id?.toString?.() ?? String(post._id ?? ""),
-        id: post.id ?? (post._id?.toString?.() ?? String(post._id ?? "")),
+        id: post.id ?? post._id?.toString?.() ?? String(post._id ?? ""),
         slug: post.slug,
         title: post.title,
         description: post.description ?? null,
@@ -210,8 +219,12 @@ export async function getPosts(opts: ListOptions = {}): Promise<IPost[]> {
         tags: Array.isArray(post.tags) ? post.tags : [],
         published: Boolean(post.published),
         views: Number(post.views ?? 0),
-        createdAt: post.createdAt ? new Date(post.createdAt).toISOString() : null,
-        updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : null,
+        createdAt: post.createdAt
+          ? new Date(post.createdAt).toISOString()
+          : null,
+        updatedAt: post.updatedAt
+          ? new Date(post.updatedAt).toISOString()
+          : null,
         pages: Array.isArray(post.pages)
           ? post.pages.map((p: any, i: number) => ({
               pageNumber: Number(p.pageNumber ?? i + 1),
@@ -221,7 +234,11 @@ export async function getPosts(opts: ListOptions = {}): Promise<IPost[]> {
             }))
           : [],
         categories: Array.isArray(post.categories)
-          ? post.categories.map((c: any) => ({ id: String(c._id), name: c.name, slug: c.slug }))
+          ? post.categories.map((c: any) => ({
+              id: String(c._id),
+              name: c.name,
+              slug: c.slug,
+            }))
           : [],
       })) as IPost[];
     },
@@ -240,20 +257,17 @@ export async function getPostBySlug(slug: string): Promise<IPost | null> {
         .populate("categories", "name slug")
         .lean({ virtuals: true })) as any;
       if (!post) return null;
-      // Normalize legacy posts: synthesize pages from legacy `content`
-      if ((!post.pages || post.pages.length === 0) && post.content) {
-        post.pages = [
-          { pageNumber: 1, title: post.title, content: post.content },
-        ];
-      }
+
       // Sort pages deterministically
       post.pages = Array.isArray(post.pages)
-        ? [...post.pages].sort((a: any, b: any) => Number(a.pageNumber) - Number(b.pageNumber))
+        ? [...post.pages].sort(
+            (a: any, b: any) => Number(a.pageNumber) - Number(b.pageNumber)
+          )
         : [];
       // Serialize to plain JS-friendly object for Client Components
       const serialized = {
         _id: post._id?.toString?.() ?? String(post._id ?? ""),
-        id: post.id ?? (post._id?.toString?.() ?? String(post._id ?? "")),
+        id: post.id ?? post._id?.toString?.() ?? String(post._id ?? ""),
         slug: post.slug,
         title: post.title,
         description: post.description ?? null,
@@ -262,8 +276,12 @@ export async function getPostBySlug(slug: string): Promise<IPost | null> {
         tags: Array.isArray(post.tags) ? post.tags : [],
         published: Boolean(post.published),
         views: Number(post.views ?? 0),
-        createdAt: post.createdAt ? new Date(post.createdAt).toISOString() : null,
-        updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : null,
+        createdAt: post.createdAt
+          ? new Date(post.createdAt).toISOString()
+          : null,
+        updatedAt: post.updatedAt
+          ? new Date(post.updatedAt).toISOString()
+          : null,
         pages: Array.isArray(post.pages)
           ? post.pages.map((p: any, i: number) => ({
               pageNumber: Number(p.pageNumber ?? i + 1),
@@ -273,7 +291,11 @@ export async function getPostBySlug(slug: string): Promise<IPost | null> {
             }))
           : [],
         categories: Array.isArray(post.categories)
-          ? post.categories.map((c: any) => ({ id: String(c._id), name: c.name, slug: c.slug }))
+          ? post.categories.map((c: any) => ({
+              id: String(c._id),
+              name: c.name,
+              slug: c.slug,
+            }))
           : [],
       } as any;
       return serialized as IPost;
@@ -289,33 +311,39 @@ export type RenderedPage = {
   pageNumber: number;
   title: string;
   contentMarkdown: string;
-  contentHtml: string;
   prevPageNumber: number | null;
   nextPageNumber: number | null;
   pagesCount: number;
   jumpTo: Array<{ pageNumber: number; title: string }>;
 };
 
-export async function getRenderedPage(slug: string, pageNumber: number): Promise<RenderedPage | null> {
+export async function getRenderedPage(
+  slug: string,
+  pageNumber: number
+): Promise<RenderedPage | null> {
   await connectDB();
   const post = await Post.findOne({ slug }).lean();
   if (!post) return null;
   const pages = Array.isArray((post as any).pages)
-    ? [...(post as any).pages].sort((a: any, b: any) => Number(a.pageNumber) - Number(b.pageNumber))
+    ? [...(post as any).pages].sort(
+        (a: any, b: any) => Number(a.pageNumber) - Number(b.pageNumber)
+      )
     : [];
   const idx = Math.max(0, Math.min(pages.length - 1, Number(pageNumber) - 1));
   const current = pages[idx];
   if (!current) return null;
-  const html = await renderMarkdownToHtml(current.content || "");
   return {
     pageNumber: Number(current.pageNumber),
     title: current.title || `Page ${idx + 1}`,
     contentMarkdown: current.content || "",
-    contentHtml: html,
     prevPageNumber: idx > 0 ? Number(pages[idx - 1].pageNumber) : null,
-    nextPageNumber: idx < pages.length - 1 ? Number(pages[idx + 1].pageNumber) : null,
+    nextPageNumber:
+      idx < pages.length - 1 ? Number(pages[idx + 1].pageNumber) : null,
     pagesCount: pages.length,
-    jumpTo: pages.map((p: any) => ({ pageNumber: Number(p.pageNumber), title: p.title || `Page ${p.pageNumber}` })),
+    jumpTo: pages.map((p: any) => ({
+      pageNumber: Number(p.pageNumber),
+      title: p.title || `Page ${p.pageNumber}`,
+    })),
   };
 }
 
@@ -335,23 +363,39 @@ export async function reorderPages(
   for (const item of order) {
     if (item.id && byId.has(item.id)) {
       const p = byId.get(item.id);
-      newPages.push({ pageNumber: item.pageNumber, title: p.title, content: p.content, _id: p._id });
+      newPages.push({
+        pageNumber: item.pageNumber,
+        title: p.title,
+        content: p.content,
+        _id: p._id,
+      });
       byId.delete(item.id);
     }
   }
   // Append any remaining pages not specified, keeping their relative order
   for (const p of post.pages as any[]) {
     if (!p._id || !newPages.find((np) => String(np._id) === String(p._id))) {
-      newPages.push({ pageNumber: newPages.length + 1, title: p.title, content: p.content, _id: p._id });
+      newPages.push({
+        pageNumber: newPages.length + 1,
+        title: p.title,
+        content: p.content,
+        _id: p._id,
+      });
     }
   }
   // Renumber sequentially
   post.pages = newPages
     .sort((a, b) => Number(a.pageNumber) - Number(b.pageNumber))
-    .map((p, i) => ({ pageNumber: i + 1, title: p.title, content: p.content })) as any;
+    .map((p, i) => ({
+      pageNumber: i + 1,
+      title: p.title,
+      content: p.content,
+    })) as any;
   await post.save();
   revalidatePath(`/blog/${slug}`);
-  try { revalidateTag(`post:${slug}`, "max"); } catch {}
+  try {
+    revalidateTag(`post:${slug}`, "max");
+  } catch {}
   return { ok: true };
 }
 
@@ -363,17 +407,27 @@ export async function insertPage(
   await connectDB();
   const post = await Post.findOne({ slug });
   if (!post) throw new Error("Post not found");
-  const pages = [...(post.pages as any[])].sort((a, b) => a.pageNumber - b.pageNumber);
+  const pages = [...(post.pages as any[])].sort(
+    (a, b) => a.pageNumber - b.pageNumber
+  );
   const insertAt = Math.max(1, Math.min(newPage.pageNumber, pages.length + 1));
   // shift subsequent pages
   const updated = [
     ...pages.filter((p) => p.pageNumber < insertAt),
     { pageNumber: insertAt, title: newPage.title, content: newPage.content },
-    ...pages.filter((p) => p.pageNumber >= insertAt).map((p) => ({ ...p, pageNumber: p.pageNumber + 1 })),
-  ].map((p, idx) => ({ pageNumber: idx + 1, title: p.title, content: p.content }));
+    ...pages
+      .filter((p) => p.pageNumber >= insertAt)
+      .map((p) => ({ ...p, pageNumber: p.pageNumber + 1 })),
+  ].map((p, idx) => ({
+    pageNumber: idx + 1,
+    title: p.title,
+    content: p.content,
+  }));
   (post as any).pages = updated as any;
   await post.save();
   revalidatePath(`/blog/${slug}`);
-  try { revalidateTag(`post:${slug}`, "max"); } catch {}
+  try {
+    revalidateTag(`post:${slug}`, "max");
+  } catch {}
   return { ok: true };
 }

@@ -35,16 +35,16 @@ export default function Page({
         const { slug: resolvedSlug } = await params;
         setSlug(resolvedSlug);
         const fetchedPost = await getPostBySlug(resolvedSlug);
-        
+
         if (!fetchedPost || !fetchedPost.published) {
           notFound();
         }
-        
+
         // Ensure pages array exists
         if (!fetchedPost.pages || fetchedPost.pages.length === 0) {
           console.warn(`Post "${resolvedSlug}" has no pages`);
         }
-        
+
         setPost(fetchedPost);
         // Fetch initial page markdown content
         try {
@@ -131,13 +131,21 @@ export default function Page({
           {/* Author and Date - Horizontal Layout */}
           <div className="flex items-center gap-8 mb-6 text-sm">
             <div className="flex flex-col">
-              <span className="text-gray-600 text-xs uppercase tracking-wide">Author</span>
-              <span className="text-lg font-bold text-black">{post.author}</span>
+              <span className="text-gray-600 text-xs uppercase tracking-wide">
+                Author
+              </span>
+              <span className="text-lg font-bold text-black">
+                {post.author}
+              </span>
             </div>
             <div className="w-px h-8 bg-gray-400" />
             <div className="flex flex-col">
-              <span className="text-gray-600 text-xs uppercase tracking-wide">Published</span>
-              <span className="text-lg font-bold text-black">{formatDate(post.createdAt)}</span>
+              <span className="text-gray-600 text-xs uppercase tracking-wide">
+                Published
+              </span>
+              <span className="text-lg font-bold text-black">
+                {formatDate(post.createdAt)}
+              </span>
             </div>
           </div>
 
@@ -184,7 +192,9 @@ export default function Page({
           </article>
         ) : totalPages === 0 ? (
           <div className="text-center text-gray-800 py-12">
-            <p className="text-lg font-medium">No content pages available for this post.</p>
+            <p className="text-lg font-medium">
+              No content pages available for this post.
+            </p>
           </div>
         ) : (
           <div className="text-center text-gray-800 py-12">
@@ -211,10 +221,14 @@ export default function Page({
                 onClick={() => setShowPageDropdown(!showPageDropdown)}
                 className="flex items-center gap-2 rounded-lg border-2 border-black bg-gray-900 text-white px-4 py-3 font-medium hover:bg-black transition-colors"
               >
-                <span>Page {currentPage} of {totalPages}</span>
+                <span>
+                  Page {currentPage} of {totalPages}
+                </span>
                 <ChevronDown
                   size={20}
-                  className={`transition-transform ${showPageDropdown ? "rotate-180" : ""}`}
+                  className={`transition-transform ${
+                    showPageDropdown ? "rotate-180" : ""
+                  }`}
                 />
               </button>
               {showPageDropdown && (
@@ -238,7 +252,9 @@ export default function Page({
                       }`}
                     >
                       <div className="font-semibold">{pageData.title}</div>
-                      <div className="text-xs text-gray-600">Page {idx + 1} of {totalPages}</div>
+                      <div className="text-xs text-gray-600">
+                        Page {idx + 1} of {totalPages}
+                      </div>
                     </button>
                   ))}
                 </div>

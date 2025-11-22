@@ -122,10 +122,6 @@ postSchema.pre("save", function (next) {
   if (!this.pages) {
     this.pages = [];
   }
-  // Remove any old content field if it exists
-  if ((this as any).content !== undefined) {
-    delete (this as any).content;
-  }
   next();
 });
 

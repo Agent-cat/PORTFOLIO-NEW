@@ -16,16 +16,36 @@ export default function AdminDashboard() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/admin/posts");
+      setError(null);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch("/api/admin/posts", {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
       const data = await response.json();
       if (!response.ok) {
+        if (response.status === 401) {
+          // Redirect to login if unauthorized
+          window.location.href = "/login";
+          return;
+        }
         throw new Error(data.details || data.error || "Failed to fetch posts");
       }
       setPosts(data);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "An error occurred";
-      console.error("Fetch error:", errorMsg);
-      setError(errorMsg);
+      if (err instanceof Error && err.name === "AbortError") {
+        console.error("Fetch timeout");
+        setError("Request timed out. Please try again.");
+      } else {
+        const errorMsg =
+          err instanceof Error ? err.message : "An error occurred";
+        console.error("Fetch error:", errorMsg);
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }

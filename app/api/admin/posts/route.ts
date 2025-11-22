@@ -9,6 +9,7 @@ export async function GET() {
     await requireAdmin();
     await connectDB();
     const posts = await Post.find().sort({ createdAt: -1 }).lean();
+    
     // Ensure proper serialization by converting to plain objects
     const serializedPosts = posts.map((post: any) => ({
       _id: post._id?.toString?.() || post._id,
@@ -24,12 +25,22 @@ export async function GET() {
       views: post.views,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
+      categories: post.categories || [],
     }));
+    
     return NextResponse.json(serializedPosts);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error fetching posts:", errorMessage);
-    console.error("Full error:", error);
+    
+    // Return 401 for auth errors
+    if (errorMessage === "Unauthorized") {
+      return NextResponse.json(
+        { error: "Unauthorized", details: "Please log in" },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: "Failed to fetch posts", details: errorMessage },
       { status: 500 }
