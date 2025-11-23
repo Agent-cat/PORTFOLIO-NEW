@@ -33,16 +33,16 @@ export default function ArticleCard({ post }: { post: PostModel }) {
 
       {/* Content Below */}
       <div className="flex flex-col grow">
-        <h3 className="text-xl font-bold tracking-tight text-black line-clamp-2 group-hover:underline transition-all">
+        <h3 className="text-2xl font-bold tracking-tight text-black line-clamp-2 group-hover:underline transition-all">
           {post.title}
         </h3>
         {post.description ? (
-          <p className="mt-2 text-sm text-gray-700 line-clamp-2 grow">
+          <p className="mt-2 text-base text-gray-700 line-clamp-2 grow">
             {post.description}
           </p>
         ) : null}
 
-        <div className="mt-4 text-xs text-gray-600">
+        <div className="mt-4 text-sm text-gray-600">
           {formatDate(post.createdAt)}
         </div>
       </div>
