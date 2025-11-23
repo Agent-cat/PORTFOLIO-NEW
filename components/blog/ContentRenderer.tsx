@@ -5,8 +5,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { Copy, Check } from "lucide-react";
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import DynamicSyntaxHighlighter from "./DynamicSyntaxHighlighter";
+// Temporary fallback for testing
+import { LightAsync as SyntaxHighlighter } from "react-syntax-highlighter";
+import { atomOneDark } from "react-syntax-highlighter/dist/cjs/styles/hljs";
 
 type Props = { content: string };
 
@@ -48,76 +50,87 @@ export default function ContentRenderer({ content }: Props) {
             </h6>
           ),
           p: ({ children }) => (
-            <p className="text-gray-800 leading-relaxed text-base my-4">
+            <p className="text-gray-800 leading-relaxed text-lg my-4">
               {children}
             </p>
           ),
-          ul: ({ children }) => (
-            <ul className="list-disc list-inside text-gray-800 space-y-2 my-4">
-              {children}
-            </ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="list-decimal list-inside text-gray-800 space-y-2 my-4">
-              {children}
-            </ol>
-          ),
-          li: ({ children }) => (
-            <li className="text-base leading-relaxed">{children}</li>
-          ),
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-gray-400 pl-4 py-2 my-4 italic text-gray-700 bg-gray-50 rounded">
-              {children}
-            </blockquote>
-          ),
-          hr: () => <hr className="my-8 border-t-2 border-gray-400" />,
-          code: ({ inline, className, children }: any) => {
-            if (inline) {
+          code: ({ inline, className, children, ...props }: any) => {
+            // Check if it's inline by looking for className (block code has language classes)
+            const isInline = !className || className === "";
+            if (isInline) {
               return (
-                <code className="bg-gray-200 px-1.5 py-0.5 rounded text-sm font-mono text-red-600 font-bold">
+                <code className="text-red-600 font-mono font-semibold">
                   {children}
                 </code>
               );
             }
-            return null;
+            // For block code, let the pre component handle it
+            return <code className={className}>{children}</code>;
           },
-          pre: ({ node, children }: any) => {
+          pre: ({ children, ...props }: any) => {
             let code = "";
-            let language = "";
+            let language = ""; // Don't default to javascript
 
-            // Try to get code from node first (most reliable)
-            if (node?.children?.[0]?.tagName === "code") {
-              const codeNode = node.children[0];
-              code =
-                codeNode.children?.map((child: any) => child.value).join("") ||
-                "";
-              language =
-                codeNode.properties?.className?.[0]?.replace("language-", "") ||
-                "";
+            // Extract text content from React elements
+            const extractTextContent = (element: any): string => {
+              if (typeof element === "string") return element;
+              if (typeof element === "number") return String(element);
+              if (Array.isArray(element)) {
+                return element.map(extractTextContent).join("");
+              }
+              if (element && typeof element === "object") {
+                if (element.props?.children) {
+                  return extractTextContent(element.props.children);
+                }
+                // Handle special cases like newlines
+                if (element.type === "br" || element.type === "\n") return "\n";
+              }
+              return "";
+            };
+
+            code = extractTextContent(children);
+
+            // Extract language from code element
+            const codeElement = Array.isArray(children)
+              ? children[0]
+              : children;
+
+            if (codeElement?.props?.className) {
+              const codeClass = codeElement.props.className;
+              const match = codeClass.match(/language-(\w+)/);
+              if (match) {
+                let extractedLang = match[1];
+                // Map common language shortcuts to full names
+                const langMap: { [key: string]: string } = {
+                  js: "javascript",
+                  ts: "typescript",
+                  py: "python",
+                  rb: "ruby",
+                  sh: "bash",
+                  bash: "bash",
+                  yml: "yaml",
+                  md: "markdown",
+                  html: "html",
+                  css: "css",
+                  json: "json",
+                  sql: "sql",
+                  go: "go",
+                  rs: "rust",
+                  php: "php",
+                  java: "java",
+                  cpp: "cpp",
+                  c: "c",
+                  cs: "csharp",
+                };
+                language =
+                  langMap[extractedLang.toLowerCase()] ||
+                  extractedLang.toLowerCase();
+              }
             }
 
-            // Fallback to children extraction
-            if (!code && Array.isArray(children) && children.length > 0) {
-              const codeElement = children[0];
-              if (codeElement?.props?.className) {
-                language = codeElement.props.className.replace("language-", "");
-              }
-              if (codeElement?.props?.children) {
-                const codeContent = codeElement.props.children;
-                if (Array.isArray(codeContent)) {
-                  code = codeContent
-                    .map((item: any) => {
-                      if (typeof item === "string") return item;
-                      if (item?.props?.children) return item.props.children;
-                      return String(item);
-                    })
-                    .join("");
-                } else if (typeof codeContent === "string") {
-                  code = codeContent;
-                } else {
-                  code = String(codeContent);
-                }
-              }
+            // Fallback to javascript if no language found
+            if (!language) {
+              language = "javascript";
             }
 
             return <CodeBlock code={code} language={language} />;
@@ -140,7 +153,9 @@ export default function ContentRenderer({ content }: Props) {
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-gray-300 px-4 py-2">{children}</td>
+            <td className="border border-gray-300 px-4 py-2 text-base">
+              {children}
+            </td>
           ),
           a: ({ href, children }) => (
             <a
