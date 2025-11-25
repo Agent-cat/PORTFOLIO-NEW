@@ -1,1 +1,8 @@
 @import "tailwindcss";
+@import "devicon/devicon.min.css";
+
+.bg-grid-pattern {
+  background-image: linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+}

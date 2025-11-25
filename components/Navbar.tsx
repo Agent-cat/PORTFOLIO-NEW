@@ -32,7 +32,7 @@ const Navbar = () => {
       <div className="mx-auto max-w-7xl px-6">
         <div
           className={`flex items-center justify-between border-b border-black/10 text-black ${
-            scrolled ? "py-2" : "py-3"
+            scrolled ? "py-4" : "py-5"
           } transition-all duration-300`}
         >
           <Link href="/" className="font-bold tracking-tight text-lg">
