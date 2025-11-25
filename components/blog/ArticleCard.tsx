@@ -42,8 +42,21 @@ export default function ArticleCard({ post }: { post: PostModel }) {
           </p>
         ) : null}
 
-        <div className="mt-4 text-sm text-gray-600">
-          {formatDate(post.createdAt)}
+        <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+          <span>{formatDate(post.createdAt)}</span>
+          {post.tags && post.tags.length > 0 && (
+            <div className="flex gap-2 ml-4">
+              {post.tags.slice(0, 3).map((tag, index) => (
+                <span key={index} className="text-gray-500">
+                  #{tag}
+                  {index < Math.min(post.tags.length - 1, 2) && " "}
+                </span>
+              ))}
+              {post.tags.length > 3 && (
+                <span className="text-gray-500">...</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Link>
