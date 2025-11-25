@@ -104,7 +104,7 @@ export default function Page({
   };
 
   return (
-    <main className="min-h-screen bg-[#d4d3d3]">
+    <main className="min-h-screen ">
       <div className="mx-auto max-w-4xl px-6 py-8">
         {/* Compact Header Section */}
         <div className="mb-6">

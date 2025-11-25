@@ -26,7 +26,7 @@ export default async function Page({
     : posts;
 
   return (
-    <main className="min-h-screen bg-[#d4d3d3]">
+    <main className="min-h-screen ">
       <div className="mx-auto max-w-5xl px-8 md:px-12 py-16">
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-black">
